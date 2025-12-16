@@ -328,7 +328,7 @@ export default function Chat() {
 
   const reportsData = [
     {
-      title: 'Informe comercial',
+      title: 'Proyecto comercial',
       description: 'Ventas por tipo de producto y region.',
       owner: 'Andres Leon',
       timeLabel: 'hace 2 dias',
@@ -749,7 +749,7 @@ export default function Chat() {
         onClick={() => setActiveView('reports')}
         bg={activeView === 'reports' ? useColorModeValue('white', 'whiteAlpha.200') : 'transparent'}
       >
-        {sidebarExpanded ? 'Informes' : ''}
+        {sidebarExpanded ? 'Proyectos' : ''}
       </Button>
         <Flex
           mt="auto"
@@ -817,7 +817,7 @@ export default function Chat() {
                 {!selectedReport && (
                   <Box mb="16px" display="flex" flexDir="column" alignItems="center">
                     <Text fontSize="3xl" fontWeight="800" color={textColor} mb="12px" textAlign="center">
-                      Todos los informes
+                      Todos los proyectos
                     </Text>
                     <Flex
                       align="center"
@@ -835,7 +835,7 @@ export default function Chat() {
                     >
                       <Icon as={FiSearch} color={brandColor} w="20px" h="20px" />
                       <Input
-                        placeholder="Buscar en todos los informes"
+                        placeholder="Buscar en todos los proyectos"
                         border="none"
                         _focus={{ boxShadow: 'none' }}
                         fontSize="md"
@@ -891,7 +891,7 @@ export default function Chat() {
                 {!selectedReport && (
                   <Box mt="20px">
                     <Text fontSize="xl" fontWeight="700" color={textColor} mb="12px">
-                      Informes
+                      Proyectos
                     </Text>
                     <Flex mt="12px" gap="16px" flexWrap="wrap">
                       {filteredReports.length === 0 ? (
