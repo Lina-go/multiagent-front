@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 /* eslint-disable */
 
 import { ChatBody } from '@/types/types';
@@ -18,6 +18,11 @@ import {
   Progress,
   Icon,
   Portal,
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Menu,
   MenuButton,
   MenuList,
@@ -47,6 +52,8 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiX,
+  FiCheck,
+  FiEdit2,
   FiArrowLeft,
   FiMoreVertical,
   FiFolder,
@@ -343,6 +350,9 @@ export default function Chat() {
   const [projects, setProjects] = useState<any[]>([]);
   const [projectItems, setProjectItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState<boolean>(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [draftItemTitle, setDraftItemTitle] = useState<string>('');
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
   const [selectedGraphToAdd, setSelectedGraphToAdd] = useState<{ url: string; type: string; title?: string } | null>(null);
   const streamRef = useRef<HTMLDivElement | null>(null);
   const streamEndRef = useRef<HTMLDivElement | null>(null);
@@ -807,6 +817,46 @@ export default function Chat() {
     window?.scrollTo?.({ top: 0, behavior: 'smooth' });
   };
 
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setDraftItemTitle(item.title || '');
+  };
+
+  const cancelEditItem = () => {
+    setEditingItemId(null);
+    setDraftItemTitle('');
+  };
+
+  const saveItemTitle = async (itemId: string) => {
+    if (!selectedReport?.id) {
+      toast({ title: 'Selecciona un proyecto para editar.', status: 'warning' });
+      return;
+    }
+    const trimmed = draftItemTitle.trim();
+    if (!trimmed) {
+      toast({ title: 'El t\u00edtulo no puede estar vac\u00edo.', status: 'warning' });
+      return;
+    }
+    setSavingItemId(itemId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/projects/${selectedReport.id}/items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (!res.ok) throw new Error('No se pudo guardar el t\u00edtulo');
+      const updated = await res.json();
+      const newTitle = updated?.title || trimmed;
+      setProjectItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, title: newTitle } : it)));
+      toast({ title: 'T\u00edtulo actualizado.', status: 'success', duration: 2200 });
+      cancelEditItem();
+    } catch (e) {
+      toast({ title: 'Error al actualizar el t\u00edtulo.', status: 'error' });
+    } finally {
+      setSavingItemId(null);
+    }
+  };
+
   useLayoutEffect(() => {
     if (streamingStoppedRef.current) return;
     const lastEvent = streamEvents[streamEvents.length - 1];
@@ -1233,20 +1283,71 @@ export default function Chat() {
                             boxShadow="0 4px 12px rgba(15, 76, 155, 0.08)"
                             _hover={{ boxShadow: '0 8px 20px rgba(15, 76, 155, 0.15)' }}
                             transition="all 0.2s ease"
+                            position="relative"
+                            role="group"
                           >
                             <Box p="12px" borderBottom="1px solid" borderColor={borderColor} bg="gray.50">
-                              <Flex align="center" gap={2}>
-                                <Icon as={FiBarChart2} color={brandColor} />
-                                <Text fontWeight="600" fontSize="sm" color={textColor} noOfLines={1}>
-                                  {item.title || 'Gráfica'}
-                                </Text>
+                              <Flex align="center" justify="space-between" gap={3}>
+                                <Flex align="center" gap={2} minW={0} flex="1">
+                                  <Icon as={FiBarChart2} color={brandColor} />
+                                  {editingItemId === item.id ? (
+                                    <Input
+                                      size="sm"
+                                      value={draftItemTitle}
+                                      onChange={(e) => setDraftItemTitle(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveItemTitle(item.id);
+                                        if (e.key === 'Escape') cancelEditItem();
+                                      }}
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <Text fontWeight="600" fontSize="sm" color={textColor} noOfLines={1}>
+                                      {item.title || 'Grafica'}
+                                    </Text>
+                                  )}
+                                </Flex>
                               </Flex>
-                              {item.created_at && (
-                                <Text fontSize="xs" color="gray.500" mt={1}>
-                                  {new Date(item.created_at).toLocaleDateString('es-ES')}
-                                </Text>
-                              )}
                             </Box>
+                            <Flex
+                              position="absolute"
+                              top="10px"
+                              right="10px"
+                              gap={2}
+                              opacity={editingItemId === item.id ? 1 : 0}
+                              _groupHover={{ opacity: 1 }}
+                              transition="opacity 0.2s ease"
+                            >
+                              {editingItemId === item.id ? (
+                                <>
+                                  <IconButton
+                                    aria-label="Guardar titulo"
+                                    icon={<FiCheck />}
+                                    size="sm"
+                                    colorScheme="blue"
+                                    variant="solid"
+                                    isLoading={savingItemId === item.id}
+                                    onClick={() => saveItemTitle(item.id)}
+                                  />
+                                  <IconButton
+                                    aria-label="Cancelar"
+                                    icon={<FiX />}
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={cancelEditItem}
+                                    isDisabled={savingItemId === item.id}
+                                  />
+                                </>
+                              ) : (
+                                <IconButton
+                                  aria-label="Editar titulo"
+                                  icon={<FiEdit2 />}
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => startEditItem(item)}
+                                />
+                              )}
+                            </Flex>
                             <Box
                               as="iframe"
                               src={item.content}
@@ -1583,7 +1684,7 @@ export default function Chat() {
                                   <Flex direction="column">
                                     {reasoningList.map((line, lineIdx) => (
                                       (() => {
-                                        const match = line.match(/^\*\*(.+?)\*\*\s*(.*)$/);
+                                        const match = line.match(/^\*\*(.+?)\*\*\s*([\s\S]*)$/);
                                         const indexText = `${lineIdx + 1}. `;
                                         if (match) {
                                           const [, rawLabel, rest] = match;
@@ -1629,45 +1730,7 @@ export default function Chat() {
                           </Box>
                         )}
 
-                        {Array.isArray(item.formatted?.datos) && item.formatted.datos.length > 0 && (
-                          <Box overflowX="auto">
-                            <Table size="sm" variant="simple">
-                              <Thead>
-                                <Tr>
-                                  {Object.keys(item.formatted.datos[0] || {}).map((key) => (
-                                    <Th key={key} textTransform="capitalize">
-                                      {key}
-                                    </Th>
-                                  ))}
-                                </Tr>
-                              </Thead>
-                              <Tbody>
-                                {item.formatted.datos.map((row: Record<string, any>, rowIdx: number) => (
-                                  <Tr key={rowIdx}>
-                                    {Object.keys(item.formatted.datos[0] || {}).map((key) => (
-                                      <Td key={key}>
-                                        {typeof row[key] === 'number'
-                                          ? row[key].toLocaleString('es-MX')
-                                          : String(row[key])}
-                                      </Td>
-                                    ))}
-                                  </Tr>
-                                ))}
-                              </Tbody>
-                            </Table>
-                          </Box>
-                        )}
-
-                        {item.formatted?.insight && (
-                          <Box>
-                            <Text fontWeight="700" color={textColor} mb="6px">
-                              Insight
-                            </Text>
-                            <Text color={textColor}>{item.formatted.insight}</Text>
-                          </Box>
-                        )}
-
-                        {item.formatted?.html_url && (
+                        {(item.formatted?.html_url || item.formatted?.link_power_bi) && (
                           <Box
                             border="1px solid"
                             borderColor={borderColor}
@@ -1679,7 +1742,7 @@ export default function Chat() {
                           >
                             <Flex justify="space-between" align="center" mb="8px" px="4px">
                               <Text fontWeight="700" color={textColor} fontSize="sm">
-                                Gráfica Generada
+                                Visualizacion
                               </Text>
 
                               <Menu>
@@ -1696,7 +1759,7 @@ export default function Chat() {
                                     onClick={() => handleOpenAddToProject(
                                       item.formatted.html_url,
                                       'html',
-                                      item.formatted.insight || 'Gráfica analítica'
+                                      item.formatted.insight || 'Grafica analitica'
                                     )}
                                   >
                                     Agregar a proyecto
@@ -1705,26 +1768,78 @@ export default function Chat() {
                               </Menu>
                             </Flex>
 
-                            <Box
-                              as="iframe"
-                              src={item.formatted.html_url}
-                              width="100%"
-                              height="400px"
-                              border="none"
-                              borderRadius="8px"
-                            />
+                            {item.formatted?.html_url && (
+                              <Box
+                                as="iframe"
+                                src={item.formatted.html_url}
+                                width="100%"
+                                height="400px"
+                                border="none"
+                                borderRadius="8px"
+                              />
+                            )}
+
+                            {item.formatted?.link_power_bi && (
+                              <Box mt="10px">
+                                <Text fontWeight="700" color={textColor} mb="6px">
+                                  Power BI
+                                </Text>
+                                <a href={item.formatted.link_power_bi} target="_blank" rel="noreferrer">
+                                  <Text color={brandColor} textDecoration="underline">Ver reporte</Text>
+                                </a>
+                              </Box>
+                            )}
                           </Box>
                         )}
 
-                        {item.formatted?.link_power_bi && (
+                        {item.formatted?.insight && (
                           <Box>
                             <Text fontWeight="700" color={textColor} mb="6px">
-                              Power BI
+                              Insight
                             </Text>
-                            <a href={item.formatted.link_power_bi} target="_blank" rel="noreferrer">
-                              <Text color={brandColor} textDecoration="underline">Ver reporte</Text>
-                            </a>
+                            <Text color={textColor}>{item.formatted.insight}</Text>
                           </Box>
+                        )}
+
+                        {Array.isArray(item.formatted?.datos) && item.formatted.datos.length > 0 && (
+                          <Accordion allowToggle>
+                            <AccordionItem border="1px solid" borderColor={borderColor} borderRadius="12px">
+                              <AccordionButton px="12px" py="10px">
+                                <Box flex="1" textAlign="left" fontWeight="700" color={textColor}>
+                                  Detalle de resultados (sabana de datos)
+                                </Box>
+                                <AccordionIcon />
+                              </AccordionButton>
+                              <AccordionPanel pt="0" pb="12px">
+                                <Box overflowX="auto">
+                                  <Table size="sm" variant="simple">
+                                    <Thead>
+                                      <Tr>
+                                        {Object.keys(item.formatted.datos[0] || {}).map((key) => (
+                                          <Th key={key} textTransform="capitalize">
+                                            {key}
+                                          </Th>
+                                        ))}
+                                      </Tr>
+                                    </Thead>
+                                    <Tbody>
+                                      {item.formatted.datos.map((row: Record<string, any>, rowIdx: number) => (
+                                        <Tr key={rowIdx}>
+                                          {Object.keys(item.formatted.datos[0] || {}).map((key) => (
+                                            <Td key={key}>
+                                              {typeof row[key] === 'number'
+                                                ? row[key].toLocaleString('es-MX')
+                                                : String(row[key])}
+                                            </Td>
+                                          ))}
+                                        </Tr>
+                                      ))}
+                                    </Tbody>
+                                  </Table>
+                                </Box>
+                              </AccordionPanel>
+                            </AccordionItem>
+                          </Accordion>
                         )}
                       </>
                     )}
@@ -1916,4 +2031,7 @@ export default function Chat() {
     </Flex>
   );
 }
+
+
+
 

@@ -25,7 +25,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   }, [apiKey]);
 
   return (
-    <html lang="en">
+    <html lang="es">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
       <body id={'root'}>
         <AppWrappers>
           {pathname?.includes('register') || pathname?.includes('sign-in') ? (
