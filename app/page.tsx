@@ -59,6 +59,8 @@ import {
   FiFolder,
   FiPlus,
 } from 'react-icons/fi';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { SearchBar } from '@/components/navbar/searchBar/SearchBar';
 
 type StreamEvent = { step: string; payload: any };
@@ -1080,8 +1082,9 @@ export default function Chat() {
         <Flex
         direction="column"
         w="100%"
-        maxW={activeView === 'chat' ? '840px' : 'unset'}
+        maxW={activeView === 'chat' ? '820px' : 'unset'}
         mx={activeView === 'chat' ? 'auto' : '0'}
+        px={activeView === 'chat' ? '10px' : '0'}
         mb="8px"
         border="none"
         outline="none"
@@ -1797,7 +1800,22 @@ export default function Chat() {
                             <Text fontWeight="700" color={textColor} mb="6px">
                               Insight
                             </Text>
-                            <Text color={textColor}>{item.formatted.insight}</Text>
+                            <Box
+                              color={textColor}
+                              sx={{
+                                '& ul, & ol': {
+                                  paddingLeft: '1.2em',
+                                  marginLeft: 0,
+                                },
+                                '& li': {
+                                  marginBottom: '0.25em',
+                                },
+                              }}
+                            >
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {item.formatted.insight}
+                              </ReactMarkdown>
+                            </Box>
                           </Box>
                         )}
 
